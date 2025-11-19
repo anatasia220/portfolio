@@ -1,240 +1,209 @@
-/* main.js */
-document.addEventListener("DOMContentLoaded", function () {
-  /* Header scroll */
-  const header = document.querySelector("header");
-  window.addEventListener("scroll", () => {
-    if (window.scrollY > 50) header.classList.add("scrolled");
-    else header.classList.remove("scrolled");
-  });
+// =============================
+// main.js (強化版 + PDF/Turn.js 健壯處理)
+// =============================
 
-  /* Hero arrow */
-  const arrow = document.querySelector(".arrow");
-  if (arrow) arrow.addEventListener("click", () => document.querySelector("#about").scrollIntoView({ behavior: "smooth" }));
+// ----------------- Header scroll & fade-in -----------------
+(function () {
+  const $header = $('header');
+  function onScroll() {
+    if (window.scrollY > 60) $header.addClass('scrolled');
+    else $header.removeClass('scrolled');
 
-  /* Fade-up */
-  const fadeUps = document.querySelectorAll(".fade-up");
-  const fadeObserver = new IntersectionObserver((entries) => {
-    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add("visible"); });
-  }, { threshold: 0.18 });
-  fadeUps.forEach(el => fadeObserver.observe(el));
-
-  /* Portfolio slider */
-  const slider = document.querySelector(".portfolio-slider");
-  const items = Array.from(document.querySelectorAll(".portfolio-item"));
-  let idx = 0, autoSlide;
-  function updateSlider() {
-    if (!items.length || !slider) return;
-    const w = Math.round(items[0].getBoundingClientRect().width);
-    slider.style.transform = `translateX(${-idx * w}px)`;
-  }
-  function startAuto() { stopAuto(); autoSlide = setInterval(() => { idx = (idx + 1) % items.length; updateSlider(); }, 4000); }
-  function stopAuto() { if (autoSlide) clearInterval(autoSlide); }
-  window.addEventListener("resize", updateSlider);
-  const prevBtn = document.querySelector(".portfolio-btn.prev");
-  const nextBtn = document.querySelector(".portfolio-btn.next");
-  if (prevBtn) prevBtn.addEventListener("click", () => { idx = idx === 0 ? items.length - 1 : idx - 1; updateSlider(); startAuto(); });
-  if (nextBtn) nextBtn.addEventListener("click", () => { idx = (idx + 1) % items.length; updateSlider(); startAuto(); });
-  if (slider) { slider.addEventListener("mouseenter", stopAuto); slider.addEventListener("mouseleave", startAuto); }
-  updateSlider(); startAuto();
-
-  /* Lightbox */
-  const lightbox = document.getElementById("lightbox");
-  const lbImg = lightbox.querySelector("img");
-  items.forEach(item => {
-    const imgEl = item.querySelector("img");
-    if (!imgEl) return;
-    imgEl.addEventListener("click", (e) => {
-      e.stopPropagation();
-      lbImg.src = imgEl.src;
-      lightbox.classList.add("active");
-      lightbox.setAttribute("aria-hidden", "false");
-    });
-  });
-  lightbox.addEventListener("click", (e) => {
-    if (e.target === lightbox || e.target === lbImg) {
-      lightbox.classList.remove("active");
-      lightbox.setAttribute("aria-hidden", "true");
-      lbImg.src = "";
-    }
-  });
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") { lightbox.classList.remove("active"); lbImg.src=""; } });
-
-  /* Contact form */
-  const form = document.getElementById("contact-form");
-  const successMsg = document.getElementById("success-message");
-  if (form) {
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
-      successMsg.classList.add("show");
-      setTimeout(() => successMsg.classList.remove("show"), 3000);
-      form.reset();
+    document.querySelectorAll('.fade-up').forEach(el => {
+      const r = el.getBoundingClientRect();
+      if (r.top < window.innerHeight - 120) el.classList.add('visible');
     });
   }
+  window.addEventListener('scroll', onScroll);
+  onScroll();
 
-  /* PDF -> canvas -> turn.js */
-  
-  const pdfItems = document.querySelectorAll(".pdf-item");
-  const flipViewer = document.getElementById("pdf-flipbook-viewer");
-  let flipbookContainer = document.getElementById("pdf-flipbook");
-  const closeBtn = document.querySelector(".close-flipbook");
+  $('.arrow').on('click', () =>
+    $('html,body').animate({ scrollTop: $('#about').offset().top }, 600)
+  );
+})();
 
-  // destroy and recreate flipbook container
-  function destroyFlipbook() {
+
+// ----------------- Portfolio slider + Lightbox -----------------
+(function () {
+  const $slider = $('.portfolio-slider');
+  const $items = $slider.children('.portfolio-item');
+  const $next = $('.portfolio-btn.next');
+  const $prev = $('.portfolio-btn.prev');
+  let index = 0;
+  let auto = null;
+
+  function updateSlide() {
+    const w = $items.eq(0).outerWidth(true);
+    $slider.css('transform', `translateX(-${index * w}px)`);
+  }
+
+  function next() {
+    index = (index + 1) % $items.length;
+    updateSlide();
+  }
+
+  function prev() {
+    index = (index - 1 + $items.length) % $items.length;
+    updateSlide();
+  }
+
+  $next.on('click', () => { next(); resetAuto(); });
+  $prev.on('click', () => { prev(); resetAuto(); });
+
+  function startAuto() { auto = setInterval(next, 3500); }
+  function stopAuto() { clearInterval(auto); }
+  function resetAuto() { stopAuto(); startAuto(); }
+
+  $slider.on('mouseenter', stopAuto).on('mouseleave', startAuto);
+  $(window).on('resize', updateSlide);
+
+  updateSlide();
+  startAuto();
+
+  // Lightbox
+  $('.portfolio-item img').on('click', function () {
+    $('#lightbox img').attr('src', $(this).attr('src'));
+    $('#lightbox').addClass('active').attr('aria-hidden', 'false');
+  });
+
+  $('#lightbox').on('click', function (e) {
+    if (e.target !== this && e.target.tagName === 'IMG') return;
+    $(this).removeClass('active').attr('aria-hidden', 'true');
+    $('#lightbox img').attr('src', '');
+  });
+})();
+
+
+// ----------------- Contact Form -----------------
+(function () {
+  const $form = $('#contact-form');
+  const $msg = $('#success-message');
+  $form.on('submit', function (e) {
+    e.preventDefault();
+    $msg.addClass('show');
+    setTimeout(() => $msg.removeClass('show'), 3000);
+    this.reset();
+  });
+})();
+
+
+// =====================================================
+// PDF.js + Turn.js —— 超強健版（含錯誤處理提示）
+// =====================================================
+(function () {
+
+  // Debug 訊息（在畫面上顯示錯誤）
+  function showError(msg) {
+    console.error(msg);
+    $('#pdf-flipbook').html(
+      `<div class="loading" style="color:#d33;">❌ ${msg}</div>`
+    );
+  }
+
+  // turn.js 防呆
+  function safeDestroyTurn() {
+    try { $('#pdf-flipbook').turn('destroy'); } catch (e) {}
+  }
+
+  // Reset flipbook UI
+  function resetFlipbook() {
+    safeDestroyTurn();
+    $('#pdf-flipbook')
+      .empty()
+      .append('<div class="loading">載入中…</div>');
+  }
+
+  // PDF loader
+  async function loadPDF(pdfPath) {
     try {
-      if ($(flipbookContainer).data && $(flipbookContainer).data("turn")) {
-        $(flipbookContainer).turn("destroy");
-      }
-    } catch (e) {}
-    const parent = flipbookContainer.parentElement;
-    if (parent) {
-      parent.removeChild(flipbookContainer);
-      const newDiv = document.createElement("div");
-      newDiv.id = "pdf-flipbook";
-      newDiv.className = "flipbook";
-      parent.appendChild(newDiv);
-      flipbookContainer = newDiv;
+      return await pdfjsLib.getDocument(pdfPath).promise;
+    } catch (err) {
+      showError(`PDF 無法載入（可能找不到檔案或 CORS 限制）：${pdfPath}`);
+      return null;
     }
   }
 
-  // render pdf pages to canvas and init turn.js
-  async function renderPdfToCanvasAndInitTurn(pdfUrl) {
-    if (!window['pdfjsLib']) {
-      fpdfjsLib.GlobalWorkerOptions.workerSrc = 'js/pdf.worker.min.js';
+  // Render 每一頁
+  async function renderPages(pdf) {
+    const pages = [];
+
+    for (let i = 1; i <= pdf.numPages; i++) {
+      try {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 1.3 });
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        pages.push(canvas);
+
+      } catch (err) {
+        console.error(`第 ${i} 頁載入錯誤：`, err);
+      }
+    }
+
+    return pages;
+  }
+
+  // 開啟 PDF 書本
+  async function openPDF(bookName) {
+    const pdfPath = `./PDF/${bookName}.pdf`;  // ⭐路徑確定指向 /PDF
+
+    resetFlipbook();
+    $('#pdf-flipbook-viewer').addClass('active').attr('aria-hidden', 'false');
+
+    const pdf = await loadPDF(pdfPath);
+    if (!pdf) return;
+
+    const pages = await renderPages(pdf);
+    $('#pdf-flipbook').empty();
+
+    if (!pages.length) {
+      showError("PDF 頁面載入失敗（可能是檔案損毀或空白）");
       return;
     }
-    flipbookContainer.innerHTML = '<div class="loading">載入中…</div>';
-    try {
-      const loadingTask = pdfjsLib.getDocument(pdfUrl);
-      const pdf = await loadingTask.promise;
-      const numPages = pdf.numPages;
 
-      flipbookContainer.innerHTML = '';
-      for (let p = 1; p <= numPages; p++) {
-        const pageDiv = document.createElement('div');
-        pageDiv.className = 'page';
-        const canvas = document.createElement('canvas');
-        canvas.setAttribute('data-page', p);
-        pageDiv.appendChild(canvas);
-        flipbookContainer.appendChild(pageDiv);
-      }
-
-      // render sequentially (keeping UI responsive)
-      for (let p = 1; p <= numPages; p++) {
-        const page = await pdf.getPage(p);
-        const viewportBase = page.getViewport({ scale: 2 });
-        const maxWidth = Math.min(window.innerWidth * 0.9, 1000);
-        const scale = Math.min(2, maxWidth / viewportBase.width);
-        const scaledViewport = page.getViewport({ scale });
-        const canvas = flipbookContainer.querySelector('canvas[data-page="' + p + '"]');
-        const ctx = canvas.getContext('2d');
-        canvas.width = Math.floor(scaledViewport.width);
-        canvas.height = Math.floor(scaledViewport.height);
-        canvas.style.width = canvas.width + 'px';
-        canvas.style.height = canvas.height + 'px';
-        await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
-      }
-
-      // ensure even pages for turn.js: if odd, append blank page
-      const pagesNow = flipbookContainer.querySelectorAll('.page').length;
-      if (pagesNow % 2 !== 0) {
-        const blank = document.createElement('div');
-        blank.className = 'page';
-        blank.innerHTML = '<div style="width:100%;height:100%;"></div>';
-        flipbookContainer.appendChild(blank);
-      }
-
-      // init turn.js
-      setTimeout(() => {
-        try {
-          const $fb = $(flipbookContainer);
-          $fb.turn({
-            width: Math.min(window.innerWidth * 0.9, 1000),
-            height: Math.min(window.innerHeight * 0.75, 640),
-            autoCenter: true,
-            gradients: true,
-            acceleration: true,
-            duration: 600
-          });
-          // remove loading overlays
-          flipbookContainer.querySelectorAll('.loading').forEach(el => el.remove());
-        } catch (err) {
-          flipbookContainer.innerHTML = '<div class="loading">翻頁初始化失敗，請使用桌機瀏覽器或重新整理。</div>';
-          console.error('turn init error', err);
-        }
-      }, 80);
-
-    } catch (err) {
-      console.error('PDF load error', err);
-      flipbookContainer.innerHTML = '<div class="loading">無法載入 PDF，請確認檔案已上傳至 /PDF/ 並且伺服器允許存取。</div>';
-    }
-  }
-
-  // helper: try two paths (without ext and with .pdf)
-  async function tryLoadPdf(baseName) {
-    const tryPaths = [
-      `/PDF/${baseName}`,
-      `/PDF/${baseName}.pdf`,
-      `PDF/${baseName}`,
-      `PDF/${baseName}.pdf`,
-      `./PDF/${baseName}`,
-      `./PDF/${baseName}.pdf`
-    ];
-    for (const p of tryPaths) {
-      try {
-        // attempt to load via pdf.js; if it errors will be caught
-        await renderPdfToCanvasAndInitTurn(p);
-        return;
-      } catch (e) {
-        // swallow and try next
-        console.warn('tryLoadPdf failed for', p, e);
-      }
-    }
-    // final fallback message
-    flipbookContainer.innerHTML = '<div class="loading">嘗試過多個路徑仍無法載入 PDF，請確認 /PDF/ 裡有檔案並能被瀏覽器讀取。</div>';
-  }
-
-  // click handlers for pdf items
-  pdfItems.forEach(item => {
-    const open = async () => {
-      const book = item.dataset.book;
-      if (!book) return alert('找不到作品識別名稱');
-      destroyFlipbook();
-      flipViewer.classList.add('active');
-      flipViewer.setAttribute('aria-hidden', 'false');
-      // Wait a tick to allow container to appear
-      await new Promise(r => setTimeout(r, 30));
-      await tryLoadPdf(book);
-    };
-    item.addEventListener('click', open);
-    item.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') open(); });
-  });
-
-  // close viewer
-  if (closeBtn) {
-    closeBtn.addEventListener('click', () => {
-      try { if ($(flipbookContainer).data && $(flipbookContainer).data('turn')) $(flipbookContainer).turn('destroy'); } catch(e) {}
-      flipViewer.classList.remove('active');
-      flipViewer.setAttribute('aria-hidden', 'true');
-      flipbookContainer.innerHTML = '';
+    pages.forEach(cv => {
+      const $page = $('<div class="page"></div>');
+      $page.append(cv);
+      $('#pdf-flipbook').append($page);
     });
+
+    // turn.js 初始化
+    try {
+      $('#pdf-flipbook').turn({
+        width: Math.min(1000, $(window).width() * 0.8),
+        height: Math.min(700, $(window).height() * 0.8),
+        autoCenter: true,
+        display: 'double',
+        duration: 800,
+        gradients: true,
+      });
+    } catch (err) {
+      showError("Turn.js 初始化失敗（可能 turn.min.js 未成功載入）");
+      return;
+    }
   }
 
-  // ESC to close
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      if (flipViewer.classList.contains('active')) {
-        if (closeBtn) closeBtn.click();
-      }
-    }
+  // 綁定 PDF 項目點擊
+  $('.pdf-item').on('click', function () {
+    const name = $(this).data('book');
+    if (!name) return;
+    openPDF(name);
+
+    $('html,body').animate(
+      { scrollTop: $('#pdf-flipbook-section').offset().top },
+      500
+    );
   });
 
-  // resize: update turn.js size
-  window.addEventListener('resize', () => {
-    try {
-      if ($(flipbookContainer).data && $(flipbookContainer).data('turn')) {
-        $(flipbookContainer).turn('size', Math.min(window.innerWidth * 0.9, 1000), Math.min(window.innerHeight * 0.75, 640));
-      }
-    } catch (e) {}
-    updateSlider();
+  // 關閉 flipbook
+  $('.close-flipbook').on('click', function () {
+    resetFlipbook();
+    $('#pdf-flipbook-viewer').removeClass('active');
   });
-});
+
+})();
