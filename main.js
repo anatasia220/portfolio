@@ -83,7 +83,8 @@
   });
 
   // ----------------- PDF Flipbook (新增/修改) -----------------
-  const releaseBase = "https://github.com/anatasia220/portfolio/releases/download/v1.0/";
+  const releaseBase = "./PDF/"; // 相對路徑指向專案內的 PDF 資料夾
+
 
   function showError(msg) {
     console.error(msg);
