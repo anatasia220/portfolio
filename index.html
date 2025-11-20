@@ -9,8 +9,8 @@
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="turn.css" />
 </head>
-  <!-- 新增在 head 或 body 前 -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/turn.js/4.1.0/turn.min.js"></script>
+  <script src="./libs/jquery.min.js"></script>
+<script src="./libs/turn.min.js"></script>
 
 <body>
   <header>
@@ -83,9 +83,10 @@
   <footer class="footer-minimal"> <div class="footer-inner"> <p>© 2025 ANNA All Rights Reserved.</p> <span class="line"></span> <p class="sub">For Practice Portfolio</p> </div> </footer>
 
   <!-- libs -->
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.246/build/pdf.min.js"></script>
+<script src="./libs/jquery.min.js"></script>       <!-- 本地 jQuery -->
+<script src="./libs/pdf.min.js"></script>          <!-- 本地 pdf.js -->
+<script src="./libs/turn.min.js"></script>         <!-- 本地 turn.js -->
+<script src="main.js" defer></script>             <!-- 你自己的程式 -->
 
-  <script src="main.js" defer></script>
 </body>
 </html>
