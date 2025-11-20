@@ -6,3 +6,8 @@ PDF/
 node_modules/ 
 Thumbs.db 
 .DS_Store 
+PDF/ 
+*.pdf 
+node_modules/ 
+Thumbs.db 
+.DS_Store 
