@@ -9,6 +9,10 @@
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="turn.css" />
 </head>
+  <!-- 新增在 head 或 body 前 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.10.188/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/turn.js/4.1.0/turn.min.js"></script>
+
 <body>
   <header>
     <h1><img src="./image/簽名LOGO.png" alt="ANNA Logo"></h1>
@@ -56,6 +60,11 @@
         <div class="pdf-item" data-book="N"><img src="./image/portfolio_N.png" alt="portfolio_N"></div>
       </div>
     </section>
+<!-- PDF 翻頁容器 -->
+<div id="pdf-flipbook-viewer" class="hidden">
+  <button class="close-flipbook">×</button>
+  <div id="pdf-flipbook"></div>
+</div>
 
     <!-- Flipbook Viewer -->
     <div id="pdf-flipbook-viewer" class="hidden">
