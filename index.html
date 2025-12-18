@@ -591,18 +591,24 @@
 
         /* Contact 頁 */
         .contact-grid {
-            display: grid;
-            grid-template-columns: 1fr 1.2fr;
+            display: flex;
+            /* 改用 Flex 比較好控制上下堆疊 */
+            flex-direction: column;
+            /* 設定為垂直排列 */
+            align-items: center;
+            /* 讓所有子元件水平置中 */
             gap: 60px;
-            align-items: start;
+            /* 上下區塊的間距 */
+            text-align: center;
         }
 
         .contact-info-col h3 {
             font-size: 1.2rem;
             color: #fff;
             margin-bottom: 20px;
-            border-left: 3px solid var(--accent-color);
-            padding-left: 15px;
+            border-left: none;
+            padding-left: 0;
+            margin-top: 40px
         }
 
         .email-link {
@@ -623,6 +629,7 @@
             display: flex;
             gap: 20px;
             margin-top: 30px;
+            justify-content: center;
         }
 
         .social-icon-link {
@@ -655,6 +662,21 @@
             border: 1px solid var(--border-color);
             border-radius: 4px;
             backdrop-filter: blur(5px);
+            width: 100%;
+            max-width: 600px;
+            text-align: left;
+
+        }
+
+        .guideline-col h4 {
+            margin-bottom: 25px;
+            /* 增加這個數值，距離就會拉大 */
+            color: #fff;
+            /* 確保標題是白色 */
+            font-size: 1.1rem;
+            /* 標題大小 */
+            letter-spacing: 1px;
+            /* 字元間距 */
         }
 
         .guideline-list li {
@@ -700,8 +722,8 @@
 
         .hero-title-box h1 {
             font-size: 4.5rem;
-            color: #FFFFFF ;
-            text-shadow: none ;
+            color: #FFFFFF;
+            text-shadow: none;
             /* 重要：移除所有陰影和發光效果 */
             color: #fff;
             font-family: var(--font-serif);
