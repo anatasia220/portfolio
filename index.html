@@ -1,0 +1,1902 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANNA | Visual Designer</title>
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&family=IBM+Plex+Mono&display=swap">
+    <style>
+        /* =========================================
+       1. 全域變數 & 基礎設定
+       ========================================= */
+        :root {
+            --bg-color: #000000;
+            --accent-color: #D68E99;
+            /* 乾燥玫瑰粉 */
+            --text-color: #F2E6E8;
+            /* 極淡粉白 */
+            --dim-text: #A8767E;
+            /* 暗粉色 */
+            --border-color: #222;
+            --font-main: "Helvetica Neue", Helvetica, "PingFang TC", sans-serif;
+            --font-serif: "Georgia", "Songti TC", serif;
+            --font-code: "IBM Plex Mono", monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-main);
+            line-height: 1.6;
+            width: 100vw;
+            overflow-x: hidden;
+        }
+
+        /* 首頁狀態：鎖定捲動 */
+        body.is-home {
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 內頁狀態：允許捲動 */
+        body.is-page {
+            height: auto;
+            overflow-y: auto;
+            padding-top: 80px;
+            /* 避開內頁 Header */
+            display: block;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+
+        ul {
+            list-style: none;
+        }
+
+        img {
+            max-width: 100%;
+            display: block;
+        }
+
+        /* =========================================
+       2. 背景特效 (Canvas & Noise)
+       ========================================= */
+        /* Three.js Canvas */
+        #bg-canvas {
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            /* 放在最底層 */
+            pointer-events: none;
+            /* 讓滑鼠可以穿透點擊 */
+        }
+
+        /* 雜訊濾鏡 (增加底片質感) */
+        body::before {
+            content: "";
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: transparent url("http://assets.iceable.com/img/noise-transparent.png") repeat 0 0;
+            background-size: 300px 300px;
+            animation: noise-animation 0.3s steps(5) infinite;
+            opacity: 0.08;
+            /* 調整雜訊強度 */
+            pointer-events: none;
+            z-index: 0;
+            /* 在 Canvas 之上，內容之下 */
+        }
+
+        @keyframes noise-animation {
+            0% {
+                transform: translate(0, 0);
+            }
+
+            10% {
+                transform: translate(-2%, -3%);
+            }
+
+            20% {
+                transform: translate(-4%, 2%);
+            }
+
+            30% {
+                transform: translate(2%, -4%);
+            }
+
+            40% {
+                transform: translate(-2%, 5%);
+            }
+
+            50% {
+                transform: translate(-4%, 2%);
+            }
+
+            60% {
+                transform: translate(3%, 0);
+            }
+
+            70% {
+                transform: translate(0, 3%);
+            }
+
+            80% {
+                transform: translate(-3%, 0);
+            }
+
+            90% {
+                transform: translate(2%, 2%);
+            }
+
+            100% {
+                transform: translate(1%, 0);
+            }
+        }
+
+        /* =========================================
+       4. 網站 UI 元件 (Header, Footer)
+       ========================================= */
+        /* 左上角固定 Logo */
+        .fixed-logo {
+            position: fixed;
+            top: 22.5px;
+            left: 50px;
+            height: 35px;
+            width: auto;
+            z-index: 2000;
+            opacity: 0.9;
+            transition: opacity 0.3s;
+            filter: brightness(0) invert(1);
+        }
+
+        .fixed-logo:hover {
+            opacity: 1;
+        }
+
+        /* 內頁 Header */
+        .page-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 80px;
+            padding: 0 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-bottom: none;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(15px);
+            /* 確保 Safari 瀏覽器支援 */
+
+            /* 可選：移除底部邊框，讓視覺更乾淨 */
+            border-bottom: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .nav-logo {
+            height: 35px;
+            width: auto;
+            opacity: 0.9;
+            filter: brightness(0) invert(1);
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 30px;
+        }
+
+        .nav-link {
+            color: var(--dim-text);
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            color: var(--accent-color);
+        }
+
+        /* 全域 Footer */
+        .site-footer {
+            text-align: center;
+            padding: 60px 20px;
+            margin-top: 60px;
+            border-top: none;
+            color: var(--dim-text);
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            opacity: 0.5;
+        }
+
+        /* =========================================
+       5. 頁面內容樣式
+       ========================================= */
+        /* 首頁選單 */
+        .menu-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            z-index: 10;
+            position: relative;
+            mix-blend-mode: normal;
+            /* 確保文字清晰 */
+        }
+
+        .main-link {
+            font-size: clamp(3.5rem, 10vw, 7rem);
+            font-weight: 700;
+            text-transform: uppercase;
+            line-height: 1.1;
+            transition: all 0.4s ease;
+            cursor: pointer;
+            color: var(--accent-color);
+            /* 預設乾燥玫瑰粉 */
+            /* 文字陰影增強立體感 */
+            text-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .main-link:hover {
+            color: #FFFFFF;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.6), 0 0 40px var(--accent-color);
+            transform: scale(1.05);
+        }
+
+        /* 容器與動畫 */
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px 24px 0px;
+            animation: fadeIn 0.6s ease-out;
+            position: relative;
+            z-index: 2;
+        }
+
+        .project-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 24px;
+            animation: fadeIn 0.6s ease-out;
+            position: relative;
+            z-index: 2;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .view-section {
+            display: none;
+        }
+
+        .view-section.active {
+            display: block;
+        }
+
+        /* 通用樣式 */
+        .section-label,
+        .section-title {
+            font-size: 0.9rem;
+            letter-spacing: 3px;
+            color: var(--dim-text);
+            margin-bottom: 20px;
+            display: block;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .section-title {
+            padding-top: 10px;
+            margin-bottom: 30px;
+        }
+
+        .main-title {
+            font-size: 2.5rem;
+            color: var(--accent-color);
+            font-weight: 700;
+            margin-bottom: 8px;
+            line-height: 1.2;
+        }
+
+        .section-heading {
+            font-size: 2.2rem;
+            color: var(--accent-color);
+            margin: 0 0 60px 0;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        .sub-title {
+            font-family: var(--font-serif);
+            font-size: 1.2rem;
+            color: var(--dim-text);
+            font-style: italic;
+            margin-bottom: 40px;
+            display: block;
+        }
+
+        /* About 頁 */
+        .intro-text {
+            font-size: 1.1rem;
+            max-width: 700px;
+            margin-bottom: 60px;
+            border-left: 2px solid var(--accent-color);
+            padding-left: 24px;
+        }
+
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 40px;
+            margin-bottom: 80px;
+        }
+
+        .skill-item h3 {
+            font-size: 1.3rem;
+            color: var(--accent-color);
+            margin-bottom: 8px;
+            border-bottom: 1px solid var(--dim-text);
+            padding-bottom: 10px;
+        }
+
+        .skill-en {
+            font-size: 0.9rem;
+            color: var(--dim-text);
+            font-weight: 400;
+            margin-left: 8px;
+            text-transform: uppercase;
+        }
+
+        .quote-section {
+            text-align: center;
+            padding: 60px 0;
+            border-top: 1px solid rgba(214, 142, 153, 0.3);
+            border-bottom: 1px solid rgba(214, 142, 153, 0.3);
+        }
+
+        .quote-cn {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            margin-bottom: 10px;
+            font-family: var(--font-serif);
+        }
+
+        .quote-en {
+            font-size: 1rem;
+            color: var(--dim-text);
+            letter-spacing: 1px;
+            font-style: italic;
+        }
+
+        /* Works 頁 */
+        .featured-project {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 60px;
+            margin-bottom: 140px;
+            align-items: center;
+            background: rgba(20, 20, 20, 0.6);
+            padding: 40px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(10px);
+        }
+
+        .featured-image-box {
+            border-radius: 8px;
+            overflow: hidden;
+            aspect-ratio: 16/9;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .featured-image-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.6s ease;
+        }
+
+        .featured-image-box:hover img {
+            transform: scale(1.05);
+        }
+
+        .featured-content h3 {
+            font-size: 2.5rem;
+            margin: 0 0 15px 0;
+            color: #fff;
+            line-height: 1.2;
+        }
+
+        .sub-tag {
+            display: inline-block;
+            font-size: 0.75rem;
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .btn-view {
+            display: inline-flex;
+            align-items: center;
+            color: #fff;
+            border-bottom: 1px solid var(--accent-color);
+            padding-bottom: 5px;
+            font-size: 0.95rem;
+        }
+
+        .btn-view:hover {
+            color: var(--accent-color);
+            gap: 5px;
+        }
+
+        .gallery-filter {
+            margin-bottom: 40px;
+            display: flex;
+            gap: 25px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 15px;
+        }
+
+        .filter-btn {
+            background: none;
+            border: none;
+            color: var(--dim-text);
+            cursor: pointer;
+            font-size: 1rem;
+            transition: 0.3s;
+        }
+
+        .filter-btn.active,
+        .filter-btn:hover {
+            color: var(--accent-color);
+            text-shadow: 0 0 8px rgba(214, 142, 153, 0.4);
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 40px 30px;
+        }
+
+        .gallery-item {
+            cursor: pointer;
+        }
+
+        .gallery-img {
+            width: 100%;
+            aspect-ratio: 4/3;
+            background-color: #222;
+            margin-bottom: 15px;
+            overflow: hidden;
+            border-radius: 6px;
+        }
+
+        .gallery-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s;
+            opacity: 0.85;
+        }
+
+        .gallery-item:hover .gallery-img img {
+            transform: scale(1.08);
+            opacity: 1;
+        }
+
+        .gallery-info h4 {
+            margin: 0 0 5px 0;
+            font-size: 1.1rem;
+            color: #fff;
+        }
+
+        .gallery-info span {
+            font-size: 0.85rem;
+            color: var(--dim-text);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Archive */
+        .archive-section {
+            background-color: rgba(255, 255, 255, 0.02);
+            padding: 60px;
+            border-radius: 12px;
+            border: 1px solid #222;
+            margin-top: 100px;
+            backdrop-filter: blur(5px);
+        }
+
+        .archive-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 40px 30px;
+        }
+
+        .archive-cover {
+            width: 100%;
+            aspect-ratio: 1/1.414;
+            background-color: #1a1a1a;
+            margin-bottom: 15px;
+            border: 1px solid #333;
+            position: relative;
+        }
+
+        .archive-cover::after {
+            content: "PDF";
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            background: var(--accent-color);
+            color: #000;
+            font-size: 0.7rem;
+            font-weight: bold;
+            padding: 4px 8px;
+        }
+
+        .archive-item:hover .archive-cover {
+            border-color: var(--accent-color);
+            transform: translateY(-5px);
+        }
+
+        .archive-title {
+            color: var(--text-color);
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .archive-item:hover .archive-title {
+            color: var(--accent-color);
+        }
+
+        /* Contact 頁 */
+        .contact-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 60px;
+            align-items: start;
+        }
+
+        .contact-info-col h3 {
+            font-size: 1.2rem;
+            color: #fff;
+            margin-bottom: 20px;
+            border-left: 3px solid var(--accent-color);
+            padding-left: 15px;
+        }
+
+        .email-link {
+            font-size: 1.5rem;
+            color: var(--accent-color);
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 30px;
+            border-bottom: 1px solid transparent;
+        }
+
+        .email-link:hover {
+            opacity: 0.8;
+            border-bottom: 1px solid var(--accent-color);
+        }
+
+        .social-icons-container {
+            display: flex;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .social-icon-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            color: var(--dim-text);
+            transition: all 0.3s ease;
+        }
+
+        .social-svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        .social-icon-link:hover {
+            color: var(--accent-color);
+            border-color: var(--accent-color);
+            transform: translateY(-3px);
+        }
+
+        .guideline-col {
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 40px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            backdrop-filter: blur(5px);
+        }
+
+        .guideline-list li {
+            margin-bottom: 15px;
+            padding-left: 20px;
+            position: relative;
+            font-size: 0.95rem;
+        }
+
+        .guideline-list li::before {
+            content: "•";
+            color: var(--accent-color);
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+
+        /* 專案詳情頁 */
+        .project-hero {
+            width: 100%;
+            height: auto;
+            /* 不再強制 70vh 高度 */
+            min-height: 300px;
+            /* 稍微留點空間，避免太擠 */
+            padding: 150px 50px 50px 50px;
+            margin-bottom: 60px;
+            /* 減少與下方內容的距離，讓它更緊湊生硬 */
+        }
+
+        .project-hero img {
+            display: none;
+        }
+
+        .hero-title-box {
+            position: relative;
+            /* 改回預設流動 */
+            z-index: 2;
+            max-width: 1000px;
+            /* 對齊下方內容寬度 */
+            margin: 0 auto;
+            /* 置中對齊 */
+        }
+
+        .hero-title-box h1 {
+            font-size: 4.5rem;
+            color: #FFFFFF ;
+            text-shadow: none ;
+            /* 重要：移除所有陰影和發光效果 */
+            color: #fff;
+            font-family: var(--font-serif);
+            margin-bottom: 10px;
+            line-height: 1.1;
+            font-weight: 800;
+            border: none;
+            /* 確保沒有邊框 */
+        }
+
+        .hero-subtitle {
+            display: block;
+            font-size: 1rem;
+            color: var(--accent-color);
+            /* 使用跳色的粉色，增加對比 */
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .overview-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 60px;
+            margin-bottom: 120px;
+        }
+
+        .info-list p {
+            margin-bottom: 15px;
+            color: var(--dim-text);
+            font-size: 0.9rem;
+        }
+
+        .info-list span {
+            color: #fff;
+            display: block;
+            font-size: 1.1rem;
+            margin-top: 5px;
+        }
+
+        .concept-box {
+            background: #111;
+            padding: 60px;
+            border-radius: 4px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 50px;
+            align-items: center;
+            margin-bottom: 120px;
+        }
+
+        .concept-img {
+            width: 100%;
+            border-radius: 4px;
+            border: 1px solid #333;
+        }
+
+        .identity-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+            margin-top: 40px;
+            margin-bottom: 120px;
+        }
+
+        .id-card {
+            text-align: center;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+        }
+
+        .color-palette {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px 20px;
+            /* 上下間距 30px，左右間距 20px */
+            margin-top: 20px;
+            padding: 0 20px;
+            /* 稍微往內縮一點，視覺比較集中 */
+        }
+
+        .color-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 10px;
+            /* 色塊與文字的距離 */
+        }
+
+        .color-swatch {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        /* 顏色名稱 (如 River Blue) */
+        .color-name {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--dim-text);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            line-height: 1.2;
+        }
+
+        /* 色號 (如 #94BDD4) */
+        .color-hex {
+            display: block;
+            font-family: var(--font-code);
+            font-size: 0.8rem;
+            color: #fff;
+            opacity: 0.8;
+        }
+
+        .mockup-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 120px;
+        }
+
+        .mockup-full {
+            grid-column: 1 / -1;
+        }
+
+        .project-nav-footer {
+            border-top: 1px solid var(--border-color);
+            padding: 80px 0;
+            text-align: center;
+            margin-top: 100px;
+        }
+
+        .btn-back {
+            display: inline-block;
+            padding: 15px 40px;
+            border: 1px solid var(--dim-text);
+            color: var(--text-color);
+            transition: 0.3s;
+            margin-top: 20px;
+        }
+
+        .btn-back:hover {
+            border-color: var(--accent-color);
+            background: var(--accent-color);
+            color: #000;
+        }
+
+        /* 專案內頁的外部連結樣式 */
+        .external-link {
+            display: inline-block;
+            color: #fff;
+            /* 預設白色，跟其他資訊一樣 */
+            margin-top: 5px;
+            font-size: 1.1rem;
+            border-bottom: 1px solid transparent;
+            /* 預留底線位置 */
+            transition: all 0.3s ease;
+        }
+
+        .external-link:hover {
+            color: var(--accent-color);
+            /* 滑鼠移過去變粉色 */
+            border-bottom: 1px solid var(--accent-color);
+            /* 出現底線 */
+            transform: translateY(-2px);
+            /* 輕微上浮 */
+        }
+
+        /* RWD */
+        @media (max-width: 768px) {
+            .fixed-logo {
+                top: 22.5px;
+                left: 20px;
+            }
+
+            .main-link {
+                font-size: 14vw;
+            }
+
+            .page-header {
+                padding: 0 20px;
+            }
+
+            .featured-project,
+            .overview-grid,
+            .concept-box,
+            .mockup-grid,
+            .contact-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-title-box h1 {
+                font-size: 2rem;
+            }
+
+            .site-footer {
+                margin-top: 40px;
+            }
+
+            .audio-controls {
+                bottom: 20px;
+                right: 20px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .project-hero {
+                padding: 120px 20px 30px 20px;
+            }
+
+            .hero-title-box h1 {
+                font-size: 3rem;
+                /* 手機版字體調整 */
+            }
+        }
+
+        /* =========================================
+   6. Lightbox Modal 樣式
+   ========================================= */
+        .modal-overlay {
+            display: none;
+            /* 預設隱藏 */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            z-index: 5000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .modal-content {
+            max-width: 90%;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: zoomIn 0.3s ease-out;
+        }
+
+        @keyframes zoomIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        #modal-img {
+            max-width: 100%;
+            max-height: 70vh;
+            object-fit: contain;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-caption {
+            margin-top: 20px;
+            text-align: center;
+            color: var(--text-color);
+        }
+
+        #caption-title {
+            font-size: 1.5rem;
+            color: var(--accent-color);
+            margin-bottom: 5px;
+        }
+
+        #caption-text {
+            font-size: 1rem;
+            color: var(--dim-text);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 30px;
+            right: 40px;
+            font-size: 40px;
+            color: #fff;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .close-btn:hover {
+            color: var(--accent-color);
+        }
+    </style>
+</head>
+
+<body class="is-home">
+
+
+
+
+
+
+    <div id="view-home" class="view-section active">
+        <a onclick="window.navigateTo('home')">
+            <img src="./image/簽名LOGO.png" alt="ANNA" class="fixed-logo">
+        </a>
+        <div class="menu-container"
+            style="height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 15px;">
+            <a onclick="window.navigateTo('about')" class="main-link">ABOUT</a>
+            <a onclick="window.navigateTo('works')" class="main-link">WORKS</a>
+            <a onclick="window.navigateTo('contact')" class="main-link">CONTACT</a>
+        </div>
+    </div>
+
+    <header id="inner-header" class="page-header" style="display: none;">
+        <a onclick="window.navigateTo('home')">
+            <img src="./image/簽名LOGO.png" alt="LOGO" class="nav-logo">
+        </a>
+        <nav class="nav-menu">
+            <a onclick="window.navigateTo('about')" class="nav-link" id="nav-about">About</a>
+            <a onclick="window.navigateTo('works')" class="nav-link" id="nav-works">Works</a>
+            <a onclick="window.navigateTo('contact')" class="nav-link" id="nav-contact">Contact</a>
+        </nav>
+    </header>
+
+    <div id="view-about" class="view-section">
+        <main class="container">
+            <span class="section-label">ABOUT ME</span>
+            <h1 class="main-title">懂商業邏輯的視覺設計師</h1>
+            <span class="sub-title">Visual Designer with Business Logic</span>
+            <p class="intro-text">
+                擁有 10 年以上的財務與秘書歷練，我深知商業設計的核心往往不在於炫技，而在於 <strong>解決問題 (Problem Solving)</strong>。<br><br>
+                我將過去的職涯經歷轉化為獨特的設計養分，為品牌搭建溝通的橋樑。
+            </p>
+            <div class="skills-grid">
+                <div class="skill-item">
+                    <h3>01. 邏輯與秩序<span class="skill-en">Logic</span></h3>
+                    <p><span class="skill-desc-title">源自財務背景的嚴謹訓練</span>擅長資訊梳理與版面架構，確保設計在美觀之外，更具備清晰的閱讀機能。</p>
+                </div>
+                <div class="skill-item">
+                    <h3>02. 同理與溝通<span class="skill-en">Empathy</span></h3>
+                    <p><span class="skill-desc-title">源自秘書職務的細膩觀察</span>精準洞察受眾心理與隱性需求，讓文案與視覺同步引發共鳴。</p>
+                </div>
+                <div class="skill-item">
+                    <h3>03. 精準轉譯<span class="skill-en">Translation</span></h3>
+                    <p><span class="skill-desc-title">剛柔並濟的視覺語言</span>將剛硬的商業需求，轉化為柔軟且具渲染力的視覺語言。</p>
+                </div>
+            </div>
+            <div class="quote-section">
+                <div class="quote-cn">「設計，是溝通的精準轉譯。」</div>
+                <div class="quote-en">Design is the precise translation of communication.</div>
+            </div>
+            <footer class="site-footer">&copy; 2026 ANNA. All Rights Reserved.</footer>
+        </main>
+    </div>
+
+    <div id="view-works" class="view-section">
+        <main class="container">
+            <span class="section-title">FEATURED PROJECT</span>
+            <h2 class="section-heading">商業識別系統 CIS Design</h2>
+            <div class="featured-project">
+                <div class="featured-image-box">
+                    <img src="./image/Gemini_Generated_Image_nardjanardjanard.jpeg" alt="靜川活瓷 CIS Design">
+                </div>
+                <div class="featured-content">
+                    <span class="sub-tag">Complete CIS</span>
+                    <h3>靜川活瓷</h3>
+                    <span class="featured-en-title">Jingchuan Living Ceramics</span>
+                    <p>結合活瓷科技與東方美學的品牌識別。提取「川流」的動態與「熱氣」的線條，透過視覺平衡展現品牌獨有的呼吸感。</p>
+                    <a onclick="window.navigateTo('project')" class="btn-view">View Project Case Study &rarr;</a>
+                </div>
+            </div>
+
+            <span class="section-title">SELECTED WORKS</span>
+            <h2 class="section-heading">精選視覺設計 Visual Works</h2>
+            <div class="gallery-filter">
+                <button class="filter-btn active" onclick="window.filterGallery('all', this)">All</button>
+                <button class="filter-btn" onclick="window.filterGallery('graphic', this)">Graphic</button>
+                <button class="filter-btn" onclick="window.filterGallery('3d', this)">3D Art</button>
+                <button class="filter-btn" onclick="window.filterGallery('web', this)">Web / UI</button>
+            </div>
+            <div class="gallery-grid">
+                <div class="gallery-item" data-category="graphic" onclick="window.openModal(this)">
+                    <div class="gallery-img"><img src="./image/0922-文字字體圖.png" alt="City Starlight"></div>
+                    <div class="gallery-info">
+                        <h4>Urban Rhythm Series</h4><span>Graphic</span>
+                    </div>
+                </div>
+
+                <div class="gallery-item" data-category="graphic" onclick="window.openModal(this)">
+                    <div class="gallery-img"><img src="./image/1003-遮色片應用.png" alt="Boundless"></div>
+                    <div class="gallery-info">
+                        <h4>Urban Rhythm Series</h4><span>Graphic</span>
+                    </div>
+                </div>
+
+                <div class="gallery-item" data-category="graphic" onclick="window.openModal(this)">
+                    <div class="gallery-img"><img src="./image/0922-文字字體圖2.png" alt="City Starlight"></div>
+                    <div class="gallery-info">
+                        <h4>Urban Rhythm Series</h4><span>Graphic</span>
+                    </div>
+                </div>
+
+                <div class="gallery-item" data-category="3d" onclick="window.openModal(this)">
+                    <div class="gallery-img"><img src="./image/1013-漸變筆畫.png" alt="Rainy Solitude"></div>
+                    <div class="gallery-info">
+                        <h4>Sonic Flow</h4><span>3D Art</span>
+                    </div>
+                </div>
+
+                <div class="gallery-item" data-category="3d" onclick="window.openModal(this)">
+                    <div class="gallery-img"><img src="./image/1013-漸變筆畫2.png" alt="Sonic Flow"></div>
+                    <div class="gallery-info">
+                        <h4>Sonic Flow</h4><span>3D Art</span>
+                    </div>
+                </div>
+
+                <div class="gallery-item" data-category="graphic" onclick="window.openModal(this)">
+                    <div class="gallery-img"><img src="./image/1020-漸變圖案.png" alt="Spring Reading Festival"></div>
+                    <div class="gallery-info">
+                        <h4>Spring Reading Festival</h4><span>Graphic</span>
+                    </div>
+                </div>
+
+                <div class="gallery-item" data-category="graphic" onclick="window.openModal(this)">
+                    <div class="gallery-img"><img src="./image/1020-網格漸變.png" alt="Event Identity & Visual Arts"></div>
+                    <div class="gallery-info">
+                        <h4>Event Identity & Visual Arts</h4><span>Graphic</span>
+                    </div>
+                </div>
+
+                <div class="gallery-item" data-category="3d" onclick="window.openModal(this)">
+                    <div class="gallery-img"><img src="./image/1027-3D立體弧形2.png" alt="Event Identity & Visual Arts">
+                    </div>
+                    <div class="gallery-info">
+                        <h4>Event Identity & Visual Arts</h4><span>3D Art</span>
+                    </div>
+                </div>
+
+                <div class="gallery-item" data-category="3d" onclick="window.openModal(this)">
+                    <div class="gallery-img"><img src="./image/1027-3D立體弧形.png" alt="Event Identity & Visual Arts">
+                    </div>
+                    <div class="gallery-info">
+                        <h4>Event Identity & Visual Arts</h4><span>3D Art</span>
+                    </div>
+                </div>
+
+                <div class="gallery-item" data-category="3d" onclick="window.openModal(this)">
+                    <div class="gallery-img"><img src="./image/1027-3D立體弧形3.png" alt="Event Identity & Visual Arts">
+                    </div>
+                    <div class="gallery-info">
+                        <h4>Event Identity & Visual Arts</h4><span>3D Art</span>
+                    </div>
+                </div>
+
+                <div class="gallery-item" data-category="graphic" onclick="window.openModal(this)">
+                    <div class="gallery-img"><img src="./image/1107-商品排版.png" alt="Commercial Campaign Series"></div>
+                    <div class="gallery-info">
+                        <h4>Commercial Campaign Series</h4><span>Graphic</span>
+                    </div>
+                </div>
+
+                <div class="gallery-item" data-category="graphic" onclick="window.openModal(this)">
+                    <div class="gallery-img"><img src="./image/1107-商品排版2.png" alt="Commercial Campaign Series"></div>
+                    <div class="gallery-info">
+                        <h4>Commercial Campaign Series</h4><span>Graphic</span>
+                    </div>
+                </div>
+
+                <div class="gallery-item" data-category="graphic" onclick="window.openModal(this)">
+                    <div class="gallery-img"><img src="./image/0918-花巷BANNER.png" alt="Seasonal Campaign Visuals"></div>
+                    <div class="gallery-info">
+                        <h4>Seasonal Campaign Visuals/h4><span>Graphic</span>
+                    </div>
+                </div>
+
+                <div class="gallery-item" data-category="graphic" onclick="window.openModal(this)">
+                    <div class="gallery-img"><img src="./image/0925-中秋活動圖.png" alt="Seasonal Campaign Visuals"></div>
+                    <div class="gallery-info">
+                        <h4>Seasonal Campaign Visuals</h4><span>Graphic</span>
+                    </div>
+                </div>
+
+                <div class="gallery-item" data-category="web" onclick="window.openModal(this)">
+                    <div class="gallery-img"><img src="./image/1031-YT縮圖(2).png" alt="YouTube Channel Design"></div>
+                    <div class="gallery-info">
+                        <h4>YouTube Channel Design</h4><span>>Web / UI</span>
+                    </div>
+                </div>
+
+                <div class="gallery-item" data-category="web" onclick="window.openModal(this)">
+                    <div class="gallery-img"><img src="./image/1031-YT縮圖.png" alt="YouTube Channel Design"></div>
+                    <div class="gallery-info">
+                        <h4>YouTube Channel Design</h4><span>>Web / UI</span>
+                    </div>
+                </div>
+
+                <div class="gallery-item" data-category="web" onclick="window.openModal(this)">
+                    <div class="gallery-img"><img src="./image/25 范姜宇萱-作品集_頁面_20.png" alt="Legato: The Healing MMO">
+                    </div>
+                    <div class="gallery-info">
+                        <h4>Legato: The Healing MMO</h4><span>Web / UI</span>
+                    </div>
+                </div>
+
+                <div class="gallery-item" data-category="web" onclick="window.openModal(this)">
+                    <div class="gallery-img"><img src="./image/25 范姜宇萱-作品集_頁面_21.png" alt="Legato: The Healing MMO">
+                    </div>
+                    <div class="gallery-info">
+                        <h4>Legato: The Healing MMO</h4><span>Web / UI</span>
+                    </div>
+                </div>
+
+                <div class="gallery-item" data-category="web" onclick="window.openModal(this)">
+                    <div class="gallery-img"><img src="./image/25 范姜宇萱-作品集_頁面_22.png" alt="Legato: The Healing MMO">
+                    </div>
+                    <div class="gallery-info">
+                        <h4>Legato: The Healing MMO</h4><span>Web / UI</span>
+                    </div>
+                </div>
+
+                <div class="gallery-item" data-category="web" onclick="window.openModal(this)">
+                    <div class="gallery-img"><img src="./image/25 范姜宇萱-作品集_頁面_23.png" alt="Legato: The Healing MMO">
+                    </div>
+                    <div class="gallery-info">
+                        <h4>Legato: The Healing MMO</h4><span>Web / UI</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="archive-section">
+                <div class="archive-header" style="text-align: center; margin-bottom: 50px;">
+                    <span class="section-title"
+                        style="display: inline-block; border-top: 1px solid var(--accent-color); padding-top: 10px;">ARCHIVES</span>
+
+                    <h2 class="section-heading" style="margin: 15px 0 10px 0; color: #fff; font-size: 2.5rem;">歷年專案彙整
+                    </h2>
+
+                    <span
+                        style="font-family: var(--font-code); color: var(--dim-text); letter-spacing: 2px; font-size: 0.9rem;">—
+                        PDF COLLECTION —</span>
+                </div>
+                <div class="archive-list">
+                    <a href="./PDF/portfolio_A.pdf" target="_blank" class="archive-item">
+                        <div class="archive-cover"><img src="./image/portfolio_A.png" alt="Cover"></div>
+                        <div class="archive-title">週年慶 Part 1</div>
+                    </a>
+
+                    <a href="./PDF/portfolio_B.pdf" target="_blank" class="archive-item">
+                        <div class="archive-cover"><img src="./image/portfolio_B.png" alt="Cover"></div>
+                        <div class="archive-title">週年慶 Part 2</div>
+                    </a>
+
+                    <a href="./PDF/portfolio_C.pdf" target="_blank" class="archive-item">
+                        <div class="archive-cover"><img src="./image/portfolio_C.png" alt="Cover"></div>
+                        <div class="archive-title">週年慶 Part 3</div>
+                    </a>
+
+                    <a href="./PDF/portfolio_D.pdf" target="_blank" class="archive-item">
+                        <div class="archive-cover"><img src="./image/portfolio_D.png" alt="Cover"></div>
+                        <div class="archive-title">週年慶 Part 4</div>
+                    </a>
+
+                    <a href="./PDF/portfolio_E.pdf" target="_blank" class="archive-item">
+                        <div class="archive-cover"><img src="./image/portfolio_E.png" alt="Cover"></div>
+                        <div class="archive-title">魔法家事</div>
+                    </a>
+
+                    <a href="./PDF/portfolio_F.pdf" target="_blank" class="archive-item">
+                        <div class="archive-cover"><img src="./image/portfolio_F.png" alt="Cover"></div>
+                        <div class="archive-title">龍登璀璨勁好年</div>
+                    </a>
+
+                    <a href="./PDF/portfolio_G.pdf" target="_blank" class="archive-item">
+                        <div class="archive-cover"><img src="./image/portfolio_G.png" alt="Cover"></div>
+                        <div class="archive-title">會員作伙回娘家 Part 1</div>
+                    </a>
+
+                    <a href="./PDF/portfolio_H.pdf" target="_blank" class="archive-item">
+                        <div class="archive-cover"><img src="./image/portfolio_H.png" alt="Cover"></div>
+                        <div class="archive-title">會員作伙回娘家 Part 2</div>
+                    </a>
+
+                    <a href="./PDF/portfolio_I.pdf" target="_blank" class="archive-item">
+                        <div class="archive-cover"><img src="./image/portfolio_I.png" alt="Cover"></div>
+                        <div class="archive-title">會員作伙回娘家 Part 3</div>
+                    </a>
+
+                    <a href="./PDF/portfolio_J.pdf" target="_blank" class="archive-item">
+                        <div class="archive-cover"><img src="./image/portfolio_J.png" alt="Cover"></div>
+                        <div class="archive-title">春遊郊享曲</div>
+                    </a>
+
+                    <a href="./PDF/portfolio_K.pdf" target="_blank" class="archive-item">
+                        <div class="archive-cover"><img src="./image/portfolio_K.png" alt="Cover"></div>
+                        <div class="archive-title">居家收納季</div>
+                    </a>
+
+                    <a href="./PDF/portfolio_L.pdf" target="_blank" class="archive-item">
+                        <div class="archive-cover"><img src="./image/portfolio_L.png" alt="Cover"></div>
+                        <div class="archive-title">幸福媽咪</div>
+                    </a>
+
+                    <a href="./PDF/portfolio_M.pdf" target="_blank" class="archive-item">
+                        <div class="archive-cover"><img src="./image/portfolio_M.png" alt="Cover"></div>
+                        <div class="archive-title">異國食品博覽會</div>
+                    </a>
+
+                    <a href="./PDF/portfolio_N.pdf" target="_blank" class="archive-item">
+                        <div class="archive-cover"><img src="./image/portfolio_N.png" alt="Cover"></div>
+                        <div class="archive-title">鈔集年中慶</div>
+                    </a>
+
+                </div>
+            </div>
+            <footer class="site-footer">&copy; 2026 ANNA. All Rights Reserved.</footer>
+        </main>
+    </div>
+
+    <div id="view-project" class="view-section">
+        <div class="project-hero" style="position: relative;">
+            <div class="hero-title-box">
+                <span class="hero-subtitle" style="color: #93765B; font-weight: bold;">CIS Brand Identity</span>
+                <h1>靜川活瓷 Jingchuan</h1>
+            </div>
+        </div>
+        <div class="project-container">
+            <section class="overview">
+                <span class="section-title">01. PROJECT OVERVIEW</span>
+                <div class="overview-grid">
+                    <div class="info-list">
+                        <p>CLIENT <span>靜川活瓷 Jingchuan</span></p>
+                        <p>YEAR <span>2025</span></p>
+                        <p>ROLE <span>Visual Identity, Packaging</span></p>
+
+                        <p>WEBSITE
+                            <span>
+                                <a href="https://anatasia220.github.io/JINGCHUAN/" target="_blank"
+                                    class="external-link">
+                                    jingchuan.com.tw ↗
+                                </a>
+                            </span>
+                        </p>
+                    </div>
+                    <div class="project-desc">
+                        <h3>將活水科技，注入東方瓷器靈魂</h3>
+                        <p>在這個資訊爆炸、分秒必爭的時代，我們時常問自己：「理想的生活，該是什麼溫度？」有時，我們需要精準與效率，在城市的洪流中保持最佳狀態；有時，我們渴望放慢腳步，在茶香與器物的手感中，找回內心的平靜。
+                        </p>
+
+                        </br><strong>靜下來，喝得更好。</strong>
+                    </div>
+                </div>
+            </section>
+
+            <section class="concept">
+                <span class="section-title">02. CONCEPT</span>
+                <div class="concept-box">
+                    <div class="concept-text">
+                        <h3>川流 × 熱氣 × 視覺平衡</h3>
+                        <p>我們提取了「川流（River Flow）」的動態線條，與燒製陶瓷時的「熱氣（Steam）」意象。</p>
+                    </div>
+                    <div class="concept-visual"><img src="./image/LOGO.png" alt="Sketch" class="concept-img"></div>
+                </div>
+            </section>
+
+            <section class="identity">
+                <span class="section-title">03. IDENTITY SYSTEM</span>
+                <div class="identity-grid">
+                    <div class="id-card">
+                        <h4>COLOR PALETTE</h4>
+                        <div class="color-palette">
+                            <div class="color-item">
+                                <div class="color-swatch" style="background:#94bdd4;"></div>
+                                <div class="color-info">
+                                    <span class="color-name">River Blue</span>
+                                    <span class="color-hex">#94BDD4</span>
+                                </div>
+                            </div>
+                            <div class="color-item">
+                                <div class="color-swatch" style="background:#f5f3ef;"></div>
+                                <div class="color-info">
+                                    <span class="color-name">Ceramic White</span>
+                                    <span class="color-hex">#F5F3EF</span>
+                                </div>
+                            </div>
+                            <div class="color-item">
+                                <div class="color-swatch" style="background:#333f48;"></div>
+                                <div class="color-info">
+                                    <span class="color-name">Slate Gray</span>
+                                    <span class="color-hex">#333F48</span>
+                                </div>
+                            </div>
+                            <div class="color-item">
+                                <div class="color-swatch" style="background:#93765b;"></div>
+                                <div class="color-info">
+                                    <span class="color-name">Clay Gold</span>
+                                    <span class="color-hex">#93765B</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="id-card">
+                        <h4>GRAPHICS</h4>
+                        <img src="./image/Gemini_Generated_Image_p06a36p06a36p06a.jpg" style="width:100%; opacity:0.8;">
+                    </div>
+
+                    <div class="id-card">
+                        <h4>EMPLOYEE ATTIRE</h4> <img src="./image/Gemini_Generated_Image_z5jax8z5jax8z5ja.png"
+                            alt="Storefront Design"
+                            style="width: 100%; height: auto; border-radius: 4px; margin-top: 20px; opacity: 0.9;">
+                    </div>
+
+                    <div class="id-card">
+                        <h4>STOREFRONT</h4> <img src="./image/Gemini_Generated_Image_krvbekkrvbekkrvb.jpeg"
+                            alt="Storefront Design"
+                            style="width: 100%; height: auto; border-radius: 4px; margin-top: 20px; opacity: 0.9;">
+                    </div>
+                </div>
+            </section>
+
+            <section class="applications">
+                <span class="section-title">04. APPLICATIONS</span>
+                <div class="mockup-grid">
+                    <img src="./image/Gemini_Generated_Image_ke08tmke08tmke08.png" class="mockup-img mockup-full">
+                    <img src="./image/Gemini_Generated_Image_92c6yq92c6yq92c6-processed(lightpdf.com).png"
+                        class="mockup-img">
+                    <img src="./image/Gemini_Generated_Image_vsdh3wvsdh3wvsdh.png" class="mockup-img">
+                </div>
+            </section>
+
+            <div class="project-nav-footer">
+                <a onclick="window.navigateTo('works')" class="btn-back">Back to Works</a>
+            </div>
+            <footer class="site-footer">&copy; 2025 Isabelle Kao. All Rights Reserved.</footer>
+        </div>
+    </div>
+
+    <div id="view-contact" class="view-section">
+        <main class="container">
+            <div class="contact-section">
+                <div class="contact-header">
+                    <h2 class="contact-title" style="font-size: 2.5rem; color: var(--accent-color);">CONTACT ME</h2>
+                    <span class="contact-subtitle">Let's translate your business needs into visual language.</span>
+                </div>
+                <div class="contact-grid">
+                    <div class="contact-info-col">
+                        <h3>Start a Project</h3>
+                        <p style="margin-bottom: 20px; color: var(--text-color);">準備好開始了嗎？歡迎直接來信討論您的需求。</p>
+                        <a href="mailto:your.email@example.com" class="email-link">anatasia220@gmail.com</a>
+
+                        <div class="social-icons-container">
+                            <a class="social-icon-link" aria-label="LinkedIn"><svg class="social-svg"
+                                    viewBox="0 0 24 24">
+                                    <path
+                                        d="M4.98 3.5c0 1.381-1.11 2.5-2.48 2.5s-2.48-1.119-2.48-2.5c0-1.38 1.11-2.5 2.48-2.5s2.48 1.12 2.48 2.5zm.02 4.5h-5v16h5v-16zm7.982 0h-4.968v16h5v-8.368c0-4.744 5.644-5.135 5.644 0v8.368h5v-9.961c0-6.307-7.048-6.124-8.545-3.025l-.131-3.014z" />
+                                </svg></a>
+                            <a class="social-icon-link" aria-label="Behance"><svg class="social-svg"
+                                    viewBox="0 0 24 24">
+                                    <path
+                                        d="M7.5 11a2 2 0 1 0 0-4H3v4h4.5zm1 2H3v4h5.5a2 2 0 1 0 0-4zm2.063-1.428A4 4 0 0 1 8.5 19H1V5h6.5a4 4 0 0 1 3.063 6.572zM15.5 6H21v1.5h-5.5V6zm7.5 8.5h-7.5v.25A2.75 2.75 0 0 0 20.7 16h2.134a4.752 4.752 0 0 1-9.334-1.25v-1.5a4.75 4.75 0 1 1 9.5 0v1.25zm-2.104-2a2.751 2.751 0 0 0-5.292 0h5.292z" />
+                                </svg></a>
+                            <a class="social-icon-link" aria-label="Instagram"><svg class="social-svg"
+                                    viewBox="0 0 24 24">
+                                    <path
+                                        d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+                                </svg></a>
+                        </div>
+                    </div>
+                    <div class="guideline-col">
+                        <h4>詢價與合作指引 Project Inquiry</h4>
+                        <ul class="guideline-list">
+                            <li><strong>專案類型 (Type)：</strong>例如：品牌識別、網站設計。</li>
+                            <li><strong>預計時程 (Timeline)：</strong>您期望的上線或完成時間。</li>
+                            <li><strong>預算範圍 (Budget)：</strong>這能協助我為您規劃最合適的執行規格。</li>
+                    </div>
+                </div>
+            </div>
+            <footer class="site-footer">&copy; 2025 Isabelle Kao. All Rights Reserved.</footer>
+        </main>
+    </div>
+
+    <script type="module">
+        import * as THREE from "https://esm.sh/three@0.175.0";
+        import { EffectComposer } from "https://esm.sh/three@0.175.0/examples/jsm/postprocessing/EffectComposer.js";
+        import { RenderPass } from "https://esm.sh/three@0.175.0/examples/jsm/postprocessing/RenderPass.js";
+        import { ShaderPass } from "https://esm.sh/three@0.175.0/examples/jsm/postprocessing/ShaderPass.js";
+        import { UnrealBloomPass } from "https://esm.sh/three@0.175.0/examples/jsm/postprocessing/UnrealBloomPass.js";
+        import { GUI } from "https://esm.sh/dat.gui@0.7.9";
+
+        // ==========================
+        // 1. 全域導航與互動邏輯
+        // ==========================
+
+        // 將導航函式綁定到 window (因為 type="module" 會限制作用域)
+        window.navigateTo = function (pageId) {
+            // 隱藏所有區塊
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            // 顯示目標區塊
+            document.getElementById('view-' + pageId).classList.add('active');
+
+            // 處理 Body 狀態 (Home 特效 vs 內頁捲動)
+            if (pageId === 'home') {
+                document.body.classList.add('is-home');
+                document.body.classList.remove('is-page');
+                document.getElementById('inner-header').style.display = 'none';
+            } else {
+                document.body.classList.remove('is-home');
+                document.body.classList.add('is-page');
+                document.getElementById('inner-header').style.display = 'flex';
+            }
+
+            // 更新選單狀態
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            const activeLink = document.getElementById('nav-' + (pageId === 'project' ? 'works' : pageId));
+            if (activeLink) activeLink.classList.add('active');
+
+            // 捲動回頂部
+            window.scrollTo(0, 0);
+        }
+
+        // 圖片放大功能
+        window.openModal = function (element) {
+            const modal = document.getElementById('image-modal');
+            const modalImg = document.getElementById('modal-img');
+            const captionTitle = document.getElementById('caption-title');
+            const captionText = document.getElementById('caption-text');
+
+            // 取得點擊項目的資訊
+            const imgSrc = element.querySelector('img').src;
+            const title = element.querySelector('h4').innerText;
+            const info = element.querySelector('span').innerText;
+
+            // 填入資料
+            modalImg.src = imgSrc;
+            captionTitle.innerText = title;
+            captionText.innerText = info;
+
+            // 顯示 Modal
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden'; // 禁止背景捲動
+        }
+
+        window.closeModal = function () {
+            document.getElementById('image-modal').style.display = 'none';
+            if (document.body.classList.contains('is-page')) {
+                document.body.style.overflow = 'auto'; // 恢復內頁捲動
+            }
+        }
+
+        window.filterGallery = function (category, btn) {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            document.querySelectorAll('.gallery-item').forEach(item => {
+                const type = item.getAttribute('data-category');
+                if (category === 'all' || type === category) {
+                    item.style.display = 'block';
+                    item.style.opacity = '0';
+                    setTimeout(() => item.style.opacity = '1', 50);
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+
+
+        // ==========================
+        // 2. Three.js 背景特效
+        // ==========================
+
+        // 渲染器設置 (CSS id selector not used, canvas appended automatically)
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.domElement.id = "bg-canvas"; // 給予 ID 以便 CSS 控制
+        document.body.prepend(renderer.domElement); // 插入到 Body 最前面
+
+        const mainScene = new THREE.Scene();
+        const mainCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
+        mainCamera.position.z = 1;
+
+        // 設定：色彩風格 (依據您的品牌乾燥玫瑰粉)
+        const settings = {
+            holeRadius: 0.27,
+            holeSoftness: 0.15,
+            centerGlowIntensity: 0.8,
+            ringRadius: 0.35,
+            ringWidth: 0.3,
+            vignetteRadius: 1.2,
+            vignetteSoftness: 0.68,
+            noiseScale: 3.8,
+            noiseIntensity: 0.6,
+            noiseSpeed: 0.33,
+            noiseDetail: 2,
+            noiseOffset: 0.0,
+            noiseRotation: 0.0,
+
+            // 重要：這裡調整顏色以符合網站調性 (Rose Pink)
+            holeColor: new THREE.Vector3(0.2, 0.12, 0.14), // 玫瑰粉核心
+            ringColor: new THREE.Vector3(0.15, 0.05, 0.08),   // 深玫瑰環
+            glowColor: new THREE.Vector3(0.3, 0.2, 0.22),   // 亮粉光暈
+
+            bloomStrength: 0.3,
+            bloomRadius: 0.4,
+            bloomThreshold: 0.9,
+            filmGrainIntensity: 0.065,
+
+            animationSpeed: 1.4,
+            rotationSpeed: 0.05,
+
+            particlesEnabled: true,
+            particleCount: 1500,
+            particleSize: 0.5,
+            particleColor: "#D68E99" // 粒子顏色
+        };
+
+        // 建立雜訊貼圖
+        function createNoiseTexture(size = 512) {
+            const data = new Uint8Array(size * size * 4);
+            for (let i = 0; i < size * size * 4; i += 4) {
+                const val = Math.random() * 255;
+                data[i] = val; data[i + 1] = val; data[i + 2] = val; data[i + 3] = 255;
+            }
+            const texture = new THREE.DataTexture(data, size, size);
+            texture.format = THREE.RGBAFormat;
+            texture.needsUpdate = true;
+            return texture;
+        }
+        const noiseTexture1 = createNoiseTexture();
+        const noiseTexture2 = createNoiseTexture();
+
+        // Shader 程式碼 (黑洞/星雲特效)
+        const blackHoleShader = {
+            uniforms: {
+                iTime: { value: 0 },
+                iResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+                iMouse: { value: new THREE.Vector4() },
+                iNoise1: { value: noiseTexture1 },
+                iNoise2: { value: noiseTexture2 },
+
+                holeRadius: { value: settings.holeRadius },
+                holeSoftness: { value: settings.holeSoftness },
+                centerGlowIntensity: { value: settings.centerGlowIntensity },
+                ringRadius: { value: settings.ringRadius },
+                ringWidth: { value: settings.ringWidth },
+                vignetteRadius: { value: settings.vignetteRadius },
+                vignetteSoftness: { value: settings.vignetteSoftness },
+
+                noiseScale: { value: settings.noiseScale },
+                noiseIntensity: { value: settings.noiseIntensity },
+                noiseSpeed: { value: settings.noiseSpeed },
+                noiseDetail: { value: settings.noiseDetail },
+                noiseOffset: { value: settings.noiseOffset },
+                noiseRotation: { value: settings.noiseRotation },
+
+                holeColor: { value: settings.holeColor },
+                ringColor: { value: settings.ringColor },
+                glowColor: { value: settings.glowColor }
+            },
+            vertexShader: `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform float iTime;
+                uniform vec2 iResolution;
+                uniform vec4 iMouse;
+                varying vec2 vUv;
+                
+                uniform float holeRadius;
+                uniform float holeSoftness;
+                uniform float centerGlowIntensity;
+                uniform float ringRadius;
+                uniform float ringWidth;
+                uniform float vignetteRadius;
+                uniform float vignetteSoftness;
+                
+                uniform float noiseScale;
+                uniform float noiseIntensity;
+                uniform float noiseSpeed;
+                uniform float noiseDetail;
+                uniform float noiseOffset;
+                uniform float noiseRotation;
+                
+                uniform vec3 holeColor;
+                uniform vec3 ringColor;
+                uniform vec3 glowColor;
+
+                float hash21(vec2 p) {
+                    p = fract(p * vec2(123.34, 456.21));
+                    p += dot(p, p + 19.19);
+                    return fract(p.x * p.y);
+                }
+
+                float noise(vec2 p) {
+                    float angle = noiseRotation;
+                    mat2 rot = mat2(cos(angle), sin(angle), -sin(angle), cos(angle));
+                    p = rot * p;
+                    vec2 i = floor(p);
+                    vec2 f = fract(p);
+                    vec2 u = f * f * (3.0 - 2.0 * f);
+                    float offset = noiseOffset;
+                    float a = hash21(i + vec2(0.0, 0.0) + offset);
+                    float b = hash21(i + vec2(1.0, 0.0) + offset);
+                    float c = hash21(i + vec2(0.0, 1.0) + offset);
+                    float d = hash21(i + vec2(1.0, 1.0) + offset);
+                    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+                }
+
+                float fbm(vec2 p) {
+                    float f = 0.0;
+                    float w = 0.5;
+                    float sum = 0.0;
+                    for(int i = 0; i < 8; i++) {
+                        if (i >= int(noiseDetail)) break;
+                        float octaveAngle = float(i) * 0.1;
+                        mat2 rot = mat2(cos(octaveAngle), sin(octaveAngle), -sin(octaveAngle), cos(octaveAngle));
+                        f += w * noise(p);
+                        sum += w;
+                        w *= 0.5;
+                        p = rot * p * 2.0;
+                    }
+                    return f / sum;
+                }
+
+                void main() {
+                    float aspect = iResolution.x / iResolution.y;
+                    vec2 uv = vUv;
+                    vec2 center = vec2(0.5, 0.5);
+                    vec2 circleUV = uv - center;
+                    if (aspect > 1.0) circleUV.x *= aspect;
+                    else circleUV.y /= aspect;
+                    
+                    float dist = length(circleUV);
+                    vec2 noiseUV = uv;
+                    float t = iTime * noiseSpeed;
+                    vec2 p = (noiseUV - 0.5) * noiseScale;
+                    
+                    float angle = t * 0.2;
+                    mat2 rot = mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
+                    p = rot * p;
+                    
+                    float val = 0.5 * fbm(p * 2.0 + fbm(p + vec2(t * 0.1, t * -0.05)) * 5.0);
+                    p = rot * p * 0.7;
+                    float pattern = val + 0.5 * fbm(p * val * 8.0 + t * 0.1);
+                    pattern = pow(pattern, 0.8) * noiseIntensity;
+                    
+                    float centerGlow = 1.0 - smoothstep(0.0, 0.6, dist);
+                    centerGlow = pow(centerGlow, 1.2) * (centerGlowIntensity + sin(t * 1.2) * 0.5);
+                    
+                    float ringWidthDynamic = ringWidth + sin(t * 1.5) * 0.05;
+                    float ringRadiusDynamic = ringRadius + sin(t * 0.7) * 0.05;
+                    float ringMask = smoothstep(ringRadiusDynamic - ringWidthDynamic, ringRadiusDynamic, dist) * smoothstep(ringRadiusDynamic + ringWidthDynamic, ringRadiusDynamic, dist);
+                    ringMask *= 1.0 + pattern * 0.5;
+                    
+                    float holeRadiusDynamic = holeRadius + sin(t * 0.5) * 0.02;
+                    float holeMask = smoothstep(holeRadiusDynamic - holeSoftness, holeRadiusDynamic + holeSoftness, dist);
+                    holeMask = mix(holeMask, holeMask * (1.0 + pattern * 0.5 - 0.25), 0.7);
+                    
+                    float brightness = pattern * 0.6;
+                    vec3 noiseColor = holeColor * brightness;
+                    vec3 ringComponent = ringColor * ringMask * 0.4;
+                    vec3 glowComponent = glowColor * centerGlow * 0.2;
+                    
+                    vec3 finalColor = noiseColor + ringComponent + glowComponent;
+                    finalColor *= holeMask;
+                    
+                    float vignette = smoothstep(vignetteRadius, vignetteRadius - vignetteSoftness, dist + pattern * 0.1);
+                    finalColor *= vignette;
+                    
+                    gl_FragColor = vec4(finalColor, 1.0);
+                }
+            `
+        };
+
+        const blackHoleQuad = new THREE.Mesh(
+            new THREE.PlaneGeometry(2, 2),
+            new THREE.ShaderMaterial({
+                uniforms: blackHoleShader.uniforms,
+                vertexShader: blackHoleShader.vertexShader,
+                fragmentShader: blackHoleShader.fragmentShader,
+                depthWrite: false
+            })
+        );
+        mainScene.add(blackHoleQuad);
+
+        // 後製效果 (Bloom + Grain)
+        const composer = new EffectComposer(renderer);
+        const renderPass = new RenderPass(mainScene, mainCamera);
+        composer.addPass(renderPass);
+
+        const bloomPass = new UnrealBloomPass(
+            new THREE.Vector2(window.innerWidth, window.innerHeight),
+            settings.bloomStrength, settings.bloomRadius, settings.bloomThreshold
+        );
+        composer.addPass(bloomPass);
+
+        // 粒子場景 (Particle System)
+        const particleScene = new THREE.Scene();
+        const perspectiveCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        perspectiveCamera.position.z = 50;
+
+        let particles, particlesMaterial;
+        function createParticles() {
+            if (particles) { particleScene.remove(particles); particlesMaterial.dispose(); }
+            const geometry = new THREE.BufferGeometry();
+            const count = settings.particleCount;
+            const pos = new Float32Array(count * 3);
+            for (let i = 0; i < count * 3; i++) {
+                // 球形分佈
+                const r = settings.particleDepth * Math.cbrt(Math.random());
+                const theta = Math.random() * 2 * Math.PI;
+                const phi = Math.acos(2 * Math.random() - 1);
+                pos[i] = r * Math.sin(phi) * Math.cos(theta);
+                pos[i + 1] = r * Math.sin(phi) * Math.sin(theta);
+                pos[i + 2] = r * Math.cos(phi);
+            }
+            geometry.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+
+            particlesMaterial = new THREE.PointsMaterial({
+                size: settings.particleSize,
+                color: new THREE.Color(settings.particleColor),
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending,
+                sizeAttenuation: true
+            });
+            particles = new THREE.Points(geometry, particlesMaterial);
+            particleScene.add(particles);
+        }
+        createParticles();
+
+        // 滑鼠互動
+        const mouse = new THREE.Vector2(0, 0);
+        document.addEventListener('mousemove', (e) => {
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        // 動畫迴圈
+        let time = 0;
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.01 * settings.animationSpeed;
+
+            // 更新 Shader Uniforms
+            blackHoleShader.uniforms.iTime.value = time;
+            blackHoleShader.uniforms.iMouse.value.x = (mouse.x * window.innerWidth) / 2 + window.innerWidth / 2;
+            blackHoleShader.uniforms.iMouse.value.y = (-mouse.y * window.innerHeight) / 2 + window.innerHeight / 2;
+
+            if (particles) {
+                particles.rotation.y = time * 0.05; // 粒子旋轉
+            }
+
+            composer.render();
+            // 疊加粒子場景
+            renderer.autoClear = false;
+            renderer.render(particleScene, perspectiveCamera);
+            renderer.autoClear = true;
+        }
+        animate();
+
+        // 視窗縮放處理
+        window.addEventListener('resize', () => {
+            const w = window.innerWidth, h = window.innerHeight;
+            renderer.setSize(w, h);
+            composer.setSize(w, h);
+            blackHoleShader.uniforms.iResolution.value.set(w, h);
+            perspectiveCamera.aspect = w / h;
+            perspectiveCamera.updateProjectionMatrix();
+        });
+
+        // 初始化 GUI (隱藏，需要調整時可設為 false)
+        const gui = new GUI({ autoPlace: true });
+        gui.domElement.style.display = "none"; // 預設隱藏
+    </script>
+
+    <div id="image-modal" class="modal-overlay" onclick="closeModal()">
+        <span class="close-btn">&times;</span>
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <img id="modal-img" src="" alt="Preview">
+            <div id="modal-caption" class="modal-caption">
+                <h4 id="caption-title"></h4>
+                <p id="caption-text"></p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
