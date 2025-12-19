@@ -669,11 +669,15 @@
         }
 
         .guideline-col h4 {
-    margin-bottom: 25px;  /* 增加這個數值，距離就會拉大 */
-    color: #fff;          /* 確保標題是白色 */
-    font-size: 1.1rem;    /* 標題大小 */
-    letter-spacing: 1px;  /* 字元間距 */
-}
+            margin-bottom: 25px;
+            /* 增加這個數值，距離就會拉大 */
+            color: #fff;
+            /* 確保標題是白色 */
+            font-size: 1.1rem;
+            /* 標題大小 */
+            letter-spacing: 1px;
+            /* 字元間距 */
+        }
 
         .guideline-list li {
             margin-bottom: 15px;
@@ -893,35 +897,81 @@
             /* 輕微上浮 */
         }
 
-        /* RWD */
+        /* =========================================
+           RWD 手機版整合優化 (取代原本那兩個區塊)
+           ========================================= */
         @media (max-width: 768px) {
+
+            /* --- 1. Header 與導覽列修復 (解決擠壓問題) --- */
+            .page-header {
+                height: 60px;
+                /* 高度降低，避免佔用太多畫面 */
+                padding: 0 15px;
+                /* 左右留白縮小，讓選單有空間 */
+                background-color: rgba(0, 0, 0, 0.7);
+                /* 加深背景，提升手機閱讀性 */
+                backdrop-filter: blur(20px);
+            }
+
+            .fixed-logo,
+            .nav-logo {
+                height: 24px;
+                /* Logo 縮小，騰出空間給文字 */
+                width: auto;
+            }
+
             .fixed-logo {
-                top: 22.5px;
+                top: 18px;
+                /* 配合新高度調整位置 */
                 left: 20px;
             }
 
+            .nav-menu {
+                gap: 15px;
+                /* 【關鍵】大幅縮小按鈕間距 (原30px -> 15px) */
+            }
+
+            .nav-link {
+                font-size: 13px;
+                /* 字體縮小 */
+                letter-spacing: 0.5px;
+                /* 字距縮小 */
+                padding: 5px;
+                /* 增加觸控範圍 */
+            }
+
+            /* --- 2. 首頁與內容區塊調整 --- */
             .main-link {
-                font-size: 14vw;
+                font-size: 13vw;
+                /* 響應式字體，避免過大 */
             }
 
-            .page-header {
-                padding: 0 20px;
-            }
-
+            /* 強制單欄排列，避免內容太擠 */
             .featured-project,
             .overview-grid,
             .concept-box,
             .mockup-grid,
-            .contact-grid {
+            .contact-grid,
+            .color-palette {
                 grid-template-columns: 1fr;
+                gap: 40px;
+            }
+
+            /* --- 3. 專案內頁 Hero 區塊 (包含您原本第二個區塊的設定) --- */
+            .project-hero {
+                padding: 100px 20px 40px 20px;
+                /* 調整上方距離，避開 Header */
             }
 
             .hero-title-box h1 {
-                font-size: 2rem;
+                font-size: 2.8rem;
+                /* 統一設定標題大小，折衷 2rem 與 3rem */
             }
 
+            /* --- 4. 其他 --- */
             .site-footer {
                 margin-top: 40px;
+                padding: 40px 20px;
             }
 
             .audio-controls {
@@ -930,14 +980,25 @@
             }
         }
 
-        @media (max-width: 768px) {
-            .project-hero {
-                padding: 120px 20px 30px 20px;
+        /* =========================================
+           針對 iPhone SE 等超小螢幕 (寬度 < 375px) 的額外保護
+           ========================================= */
+        @media (max-width: 375px) {
+            .nav-menu {
+                gap: 10px;
+                /* 間距再縮小 */
+            }
+
+            .nav-link {
+                font-size: 12px;
+                /* 字體再縮小 */
+                letter-spacing: 0px;
+                /* 取消字距，防止換行 */
             }
 
             .hero-title-box h1 {
-                font-size: 3rem;
-                /* 手機版字體調整 */
+                font-size: 2.2rem;
+                /* 小螢幕標題再小一點 */
             }
         }
 
@@ -1638,6 +1699,7 @@
             particlesEnabled: true,
             particleCount: 1500,
             particleSize: 0.5,
+            particleDepth: 20,
             particleColor: "#D68E99" // 粒子顏色
         };
 
